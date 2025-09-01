@@ -3,7 +3,7 @@ package main
 import "ldriko/rps-backend/game"
 
 func main() {
-	result := game.ResolveRound(game.Rock, game.Scissors)
+	result, _ := game.ResolveRound(game.Rock, game.Scissors)
 
 	switch result {
 	case "p1":
