@@ -7,22 +7,40 @@ import (
 )
 
 type Manager struct {
-	games map[string]*Game
-	mu    sync.RWMutex
+	games         map[string]*Game
+	uuidGenerator UUIDGenerator
+	mu            sync.RWMutex
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		games: make(map[string]*Game),
+		games:         make(map[string]*Game),
+		uuidGenerator: &DefaultUUIDGenerator{},
 	}
 }
 
-func (gm *Manager) CreateGame(id, p1, p2 string) (*Game, error) {
+func NewManagerWithUUIDGenerator(generator UUIDGenerator) *Manager {
+	return &Manager{
+		games:         make(map[string]*Game),
+		uuidGenerator: generator,
+	}
+}
+
+func (gm *Manager) CreateGame(p1, p2 string) (*Game, error) {
 	gm.mu.Lock()
 	defer gm.mu.Unlock()
 
-	if _, exists := gm.games[id]; exists {
-		return nil, errors.New("game ID already exists")
+	id := gm.uuidGenerator.Generate()
+
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		if _, exists := gm.games[id]; !exists {
+			break
+		}
+		id = gm.uuidGenerator.Generate()
+		if i == maxRetries-1 {
+			return nil, errors.New("failed to generate unique game ID")
+		}
 	}
 
 	game := NewGame(id, p1, p2)
